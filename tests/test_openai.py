@@ -1,22 +1,33 @@
-import openai
+import unittest
+from openai import OpenAI
 import toml
+import os
 
-# Load API key from config.toml
-config = toml.load("config.toml")
-api_key = config["openai"]["api_key"]
+class TestOpenAIIntegration(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Initialize OpenAI client."""
+        cls.api_key = os.getenv("OPENAI_API_KEY", "")
 
-# Test OpenAI connection
-def test_openai():
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Summarize the importance of AI in productivity."}
-        ],
-        api_key=api_key
-    )
-    return response["choices"][0]["message"]["content"]
+        if not cls.api_key and os.path.exists("config.toml"):
+            config = toml.load("config.toml")
+            cls.api_key = config.get("openai", {}).get("api_key", "")
+
+        if not cls.api_key:
+            raise ValueError("OpenAI API key is missing!")
+
+        cls.client = OpenAI(api_key=cls.api_key)
+
+    def test_openai_response(self):
+        """Ensure OpenAI returns a valid response."""
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an AI that summarizes information."},
+                {"role": "user", "content": "Summarize the importance of AI in productivity."}
+            ]
+        )
+        self.assertTrue(response.choices[0].message.content)  # Validate non-empty response
 
 if __name__ == "__main__":
-    print("Testing OpenAI API...")
-    print(test_openai())
+    unittest.main()
