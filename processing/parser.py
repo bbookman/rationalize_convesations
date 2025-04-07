@@ -9,18 +9,45 @@ class MarkdownParser:
         self.limitless_dir = limitless_dir
 
     def extract_sections(self, file_path):
-        """Extracts key sections (Overall summary, conversation summaries) from a markdown file."""
+        """Extracts high-level and secondary summaries from a markdown file."""
         with open(file_path, 'r', encoding='utf-8') as file:
             md_content = file.read()
-        
+
         # Convert Markdown to HTML for easier parsing
         html_content = markdown.markdown(md_content)
         soup = BeautifulSoup(html_content, "html.parser")
 
-        headers = [h.text for h in soup.find_all(['h1', 'h2'])]  # Extract markdown headers
-        paragraphs = [p.text for p in soup.find_all('p')]  # Extract paragraph content
+        # Extract high-level summaries (# headers)
+        high_level_headers = soup.find_all('h1')
+        sections = {}
 
-        return {"headers": headers, "content": paragraphs}
+        for header in high_level_headers:
+            section_title = header.text.strip()
+            section_content = []
+
+            # Find all secondary summaries (## headers) under this high-level summary
+            next_sibling = header.find_next_sibling()
+            while next_sibling and next_sibling.name != 'h1':
+                if next_sibling.name == 'h2':
+                    secondary_title = next_sibling.text.strip()
+                    secondary_content = []
+
+                    # Collect all paragraph content under this secondary summary
+                    next_secondary_sibling = next_sibling.find_next_sibling()
+                    while next_secondary_sibling and next_secondary_sibling.name not in ['h1', 'h2']:
+                        if next_secondary_sibling.name == 'p':
+                            secondary_content.append(next_secondary_sibling.text.strip())
+                        next_secondary_sibling = next_secondary_sibling.find_next_sibling()
+
+                    section_content.append({
+                        "secondary_title": secondary_title,
+                        "content": secondary_content
+                    })
+                next_sibling = next_sibling.find_next_sibling()
+
+            sections[section_title] = section_content
+
+        return sections
 
     def parse_markdown_files(self, directory):
         """Processes all markdown files in a directory."""
