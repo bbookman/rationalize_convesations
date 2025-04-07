@@ -1,0 +1,6 @@
+markdown
+beautifulsoup4
+openai
+python-dotenv
+toml
+requests
