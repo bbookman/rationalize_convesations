@@ -4,6 +4,7 @@ from processing.summarizer import AIEnhancedSummarizer
 from processing.resolver import AIEnhancedResolver
 from processing.generator import SummaryGenerator
 from utils.logger import Logger
+import json
 
 # Retrieve OpenAI API key from environment
 def get_openai_api_key():
@@ -35,8 +36,12 @@ def process_summaries():
         # Resolve conflicts between Bee & Limitless data
         resolver = AIEnhancedResolver(summaries.get("bee", {}), summaries.get("limitless", {}))
         refined_summaries = resolver.resolve_conflicts()
+        print("Type of refined_summaries:", type(refined_summaries))
 
         # Format and save final summaries
+        print("Type of refined_summaries:", type(refined_summaries))
+        print(json.dumps(refined_summaries, indent=2))  # Pretty-print structure
+
         generator = SummaryGenerator(refined_summaries, output_dir)
         # print("Resolved Summaries Structure:", type(refined_summaries))
         # print(refined_summaries)

@@ -1,11 +1,14 @@
 import os
 from openai import OpenAI
+from utils.logger import Logger 
+
 
 class AIEnhancedSummarizer:
     def __init__(self, parsed_data, api_key=None):
         """Initialize summarizer with parsed markdown data."""
         self.parsed_data = parsed_data
         self.api_key = os.getenv("OPENAI_API_KEY")  # Retrieve API key from environment
+        self.logger = Logger()  # Initialize logger
 
         if not self.api_key:
             raise ValueError("OpenAI API key is missing! Set OPENAI_API_KEY in your environment.")
@@ -36,7 +39,12 @@ class AIEnhancedSummarizer:
             for filename, sections in data.items():
                 prompt = self.create_prompt(sections)
                 summary = self.call_openai(prompt)
-                summaries[source][filename] = summary if summary else "Error generating summary."
+                if summary:
+                    summaries[source][filename] = summary
+                else:
+                    self.logger.error(f"Failed to generate summary for {filename} in {source}")
+
+        self.logger.debug(f"Generated summaries: {summaries}")
         return summaries
 
     def create_prompt(self, sections):
