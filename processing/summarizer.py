@@ -17,6 +17,7 @@ class AIEnhancedSummarizer:
         self.client = OpenAI(api_key=self.api_key)
 
     def call_openai(self, prompt):
+        self.logger.log("info"),("Calling OpenAI...")
         """Send a request to GPT-4o Mini for enhanced summarization with error handling."""
         try:
             response = self.client.chat.completions.create(
@@ -32,6 +33,7 @@ class AIEnhancedSummarizer:
             return None  # Graceful error handling
 
     def generate_summary(self):
+        self.logger.log("info"),("Generating summary...")
         """Iterate through parsed data and generate summaries for each section."""
         summaries = {}
         for source, data in self.parsed_data.items():
@@ -48,6 +50,7 @@ class AIEnhancedSummarizer:
         return summaries
 
     def create_prompt(self, sections):
+        self.logger.log("info"),("Creating prompt...")
         """Format extracted markdown data into a structured prompt for AI processing."""
         prompt = "Summarize the following markdown content into a structured overview:\n\n"
         for section_title, sub_sections in sections.items():

@@ -8,12 +8,6 @@ class Logger:
         """Initialize logger with automatic cleanup of existing log directory."""
         self.log_dir = log_dir
         
-        # If log_dir exists, delete it before recreating
-        if os.path.exists(self.log_dir):
-            shutil.rmtree(self.log_dir)
-            print(f"Deleted existing log directory: {self.log_dir}")
-
-        os.makedirs(self.log_dir, exist_ok=True)  # Ensure a fresh directory is created
 
         # Create log filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
