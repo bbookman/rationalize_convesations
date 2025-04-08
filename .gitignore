@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+logs/
 myenv/
 .DS_Store
 config.toml

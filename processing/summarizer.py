@@ -1,31 +1,29 @@
-import openai
 import os
+from openai import OpenAI
 
 class AIEnhancedSummarizer:
-    def __init__(self, parsed_data):
+    def __init__(self, parsed_data, api_key=None):
+        """Initialize summarizer with parsed markdown data."""
         self.parsed_data = parsed_data
-        self.client = self.initialize_openai_client()
+        self.api_key = os.getenv("OPENAI_API_KEY")  # Retrieve API key from environment
 
-    def initialize_openai_client(self):
-        """Initialize OpenAI API key."""
-        api_key = os.getenv("OPENAI_API_KEY", "")
-
-        if not api_key:
+        if not self.api_key:
             raise ValueError("OpenAI API key is missing! Set OPENAI_API_KEY in your environment.")
 
-        openai.api_key = api_key
+        # Initialize OpenAI client
+        self.client = OpenAI(api_key=self.api_key)
 
     def call_openai(self, prompt):
         """Send a request to GPT-4o Mini for enhanced summarization with error handling."""
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are an AI tasked with generating refined summaries from parsed markdown data."},
                     {"role": "user", "content": prompt}
                 ]
             )
-            return response.choices[0].message["content"]
+            return response.choices[0].message.content
         except Exception as e:
             print(f"Error calling OpenAI: {e}")
             return None  # Graceful error handling
@@ -50,4 +48,3 @@ class AIEnhancedSummarizer:
                 prompt += f"### {sub['secondary_title']}\n"
                 prompt += "\n".join(sub["content"]) + "\n\n"
         return prompt.strip()
-
