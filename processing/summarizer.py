@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-from utils.logger import Logger 
+
 
 
 class AIEnhancedSummarizer:
@@ -8,7 +8,7 @@ class AIEnhancedSummarizer:
         """Initialize summarizer with parsed markdown data."""
         self.parsed_data = parsed_data
         self.api_key = os.getenv("OPENAI_API_KEY")  # Retrieve API key from environment
-        self.logger = Logger()  # Initialize logger
+        
 
         if not self.api_key:
             raise ValueError("OpenAI API key is missing! Set OPENAI_API_KEY in your environment.")
@@ -17,7 +17,7 @@ class AIEnhancedSummarizer:
         self.client = OpenAI(api_key=self.api_key)
 
     def call_openai(self, prompt):
-        self.logger.log("info"),("Calling OpenAI...")
+        
         """Send a request to GPT-4o Mini for enhanced summarization with error handling."""
         try:
             response = self.client.chat.completions.create(
@@ -33,7 +33,7 @@ class AIEnhancedSummarizer:
             return None  # Graceful error handling
 
     def generate_summary(self):
-        self.logger.log("info"),("Generating summary...")
+        
         """Iterate through parsed data and generate summaries for each section."""
         summaries = {}
         for source, data in self.parsed_data.items():
@@ -44,13 +44,13 @@ class AIEnhancedSummarizer:
                 if summary:
                     summaries[source][filename] = summary
                 else:
-                    self.logger.error(f"Failed to generate summary for {filename} in {source}")
+                    print(f"Failed to generate summary for {filename} in {source}")
 
-        self.logger.debug(f"Generated summaries: {summaries}")
+        
         return summaries
 
     def create_prompt(self, sections):
-        self.logger.log("info"),("Creating prompt...")
+        
         """Format extracted markdown data into a structured prompt for AI processing."""
         prompt = "Summarize the following markdown content into a structured overview:\n\n"
         for section_title, sub_sections in sections.items():

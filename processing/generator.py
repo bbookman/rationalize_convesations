@@ -1,17 +1,17 @@
 import os
 import json
-from utils.logger import Logger
+
 
 class SummaryGenerator:
     def __init__(self, summaries, output_dir):
         """Initialize generator with AI-generated summaries and output directory."""
         self.summaries = self.process_summaries_structure(summaries)
         self.output_dir = output_dir
-        self.logger = Logger()
+        
         os.makedirs(self.output_dir, exist_ok=True)  # Ensure output directory exists
 
     def process_summaries_structure(self, summaries):
-        self.logger.log("info"), ("Processing summaries structure...")
+        
         """Ensure summaries is a properly formatted dictionary."""
         print("Type of summaries:", type(summaries))
         if isinstance(summaries, str):
@@ -19,8 +19,7 @@ class SummaryGenerator:
                 summaries = json.loads(summaries)  # Convert string to dict if necessary
             except json.JSONDecodeError:
                 raise ValueError("Summaries data is not valid JSON.")
-            finally:
-                self.logger.log(f"Summary JSON {summaries}")
+    
         if not isinstance(summaries, dict):
             raise TypeError("Expected summaries to be a dictionary.")
         
@@ -45,7 +44,7 @@ class SummaryGenerator:
         
         processed = {}  # Initialize the processed dictionary
         
-        self.logger.log(f"Files: {files}")
+        
         for source, files in summaries.items():
             if isinstance(files, list):
                 processed[source] = {f"entry_{i}": v for i, v in enumerate(files)}
@@ -56,7 +55,7 @@ class SummaryGenerator:
         return processed
 
     def format_summary(self, summary_data, source_availability, location=None):
-        self.logger.log("info"), ("Formatting summary...")
+        
         """Format the summary into the required markdown structure."""
         formatted_summary = ""
 
@@ -96,14 +95,14 @@ class SummaryGenerator:
         return formatted_summary.strip()
 
     def save_summary(self, date, summary_content):
-        self.logger.log("info"), ("Saving summary...")
+        
         """Save formatted summary as a markdown file in the output directory."""
         filename = f"{self.output_dir}/{date}.md"
         with open(filename, "w", encoding="utf-8") as file:
             file.write(summary_content)
 
     def generate_summaries(self):
-        self.logger.log("info"), (f"Generating summaries in {self.output_dir}...")  
+        
         """Process and generate markdown summaries for all available data."""
 
         for source, files in self.summaries.items():

@@ -3,13 +3,12 @@ from processing.parser import MarkdownParser
 from processing.summarizer import AIEnhancedSummarizer
 from processing.resolver import AIEnhancedResolver
 from processing.generator import SummaryGenerator
-from utils.logger import Logger
 import json
 
-logger = Logger()
+
 # Retrieve OpenAI API key from environment
 def get_openai_api_key():
-    logger.log("info"), ("Retrieving OpenAI API key from environment...")   
+    
     """Retrieve OpenAI API key from environment variables."""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -17,7 +16,7 @@ def get_openai_api_key():
     return api_key
 
 def process_summaries():
-    logger.log("info"),("Processing summaries...")
+    
     """Main workflow for parsing markdown files, summarizing, resolving conflicts, and generating output."""
     openai_api_key = get_openai_api_key()
     
@@ -55,7 +54,7 @@ def process_summaries():
         print("Processing complete. Summaries saved in the output directory.")
 
     except Exception as e:
-        logger.log_exception(e)
+
         print(f"Error encountered: {e}")
 
 if __name__ == "__main__":
