@@ -4,6 +4,9 @@ from processing.summarizer import AIEnhancedSummarizer
 from processing.resolver import AIEnhancedResolver
 from processing.generator import SummaryGenerator
 import json
+from utils.logger import log
+import traceback
+import sys
 
 
 # Retrieve OpenAI API key from environment
@@ -16,46 +19,75 @@ def get_openai_api_key():
     return api_key
 
 def process_summaries():
-    
-    """Main workflow for parsing markdown files, summarizing, resolving conflicts, and generating output."""
-    openai_api_key = get_openai_api_key()
-    
-
+    log.debug("=== Entering process_summaries() ===")
     try:
-        # Define directory paths directly
+        log.debug("First line of process_summaries")
+        # Force an early log flush
+        sys.stdout.flush()
+        sys.stderr.flush()
+        
+        log.debug("Setting up directories...")
         bee_dir = "test_data/bee"
         limitless_dir = "test_data/limitless"
         output_dir = "output"
+        
+        # Directory check with detailed logging
+        for dir_path in [bee_dir, limitless_dir]:
+            log.debug(f"Checking directory: {dir_path}")
+            if not os.path.exists(dir_path):
+                log.error(f"Directory not found: {dir_path}")
+                log.debug("=== Exiting process_summaries() due to missing directory ===")
+                return
 
-        # Initialize parser
+        # Continue only if directories exist
+        log.debug("All directories present, continuing...")
+        
+        log.debug("Creating parser...")
         parser = MarkdownParser(bee_dir, limitless_dir)
         parsed_data = parser.get_parsed_data()
 
-        # Generate AI-enhanced summaries
-        summarizer = AIEnhancedSummarizer(parsed_data, openai_api_key)
-        summaries = summarizer.generate_summary()
+        # Debug logging before summarizer creation
+        log.debug(f"Creating summarizer with:")
+        log.debug(f"parsed_data type: {type(parsed_data)}")
+        log.debug(f"parsed_data keys: {list(parsed_data.keys() if isinstance(parsed_data, dict) else [])}")
+        log.debug(f"API key present: {bool(get_openai_api_key())}")
 
-        # Resolve conflicts between Bee & Limitless data
-        resolver = AIEnhancedResolver(summaries.get("bee", {}), summaries.get("limitless", {}))
-        refined_summaries = resolver.resolve_conflicts()
-        print("Type of refined_summaries:", type(refined_summaries))
+        # Create summarizer with try-except for initialization
+        try:
+            summarizer = AIEnhancedSummarizer(parsed_data, get_openai_api_key())
+            log.debug("Summarizer created successfully")
+        except Exception as e:
+            log.error(f"Failed to create summarizer: {e}")
+            raise
 
-        # Format and save final summaries
-        print("Type of refined_summaries:", type(refined_summaries))
-        print(json.dumps(refined_summaries, indent=2))  # Pretty-print structure
-
-        generator = SummaryGenerator(refined_summaries, output_dir)
-        # print("Resolved Summaries Structure:", type(refined_summaries))
-        # print(refined_summaries)
-
-
-        generator.generate_summaries()
-
-        print("Processing complete. Summaries saved in the output directory.")
+        # Debug logging before and after summary generation
+        try:
+            log.debug("Starting summary generation...")
+            summaries = summarizer.generate_summary()
+            log.debug("Summary generation complete")
+        except Exception as e:
+            log.error(f"Failed during summary generation: {e}")
+            raise
 
     except Exception as e:
-
-        print(f"Error encountered: {e}")
+        log.error(f"Exception in process_summaries: {str(e)}\n{traceback.format_exc()}")
+        raise
+    finally:
+        log.debug("=== Exiting process_summaries() ===")
+        # Force final log flush
+        sys.stdout.flush()
+        sys.stderr.flush()
 
 if __name__ == "__main__":
-    process_summaries()
+    log.info("Application starting...")
+    try:
+        log.debug("About to call process_summaries()")
+        process_summaries()
+        log.debug("Finished process_summaries()")
+    except Exception as e:
+        log.error(f"Main execution failed: {e}\n{traceback.format_exc()}")
+        sys.exit(1)
+    finally:
+        log.info("Application ending...")
+        sys.stdout.flush()
+        sys.stderr.flush()

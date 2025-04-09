@@ -2,14 +2,15 @@ import os
 import re
 import markdown
 from bs4 import BeautifulSoup
+import logging
 
+log = logging.getLogger(__name__)
 
 class MarkdownParser:
     def __init__(self, bee_dir, limitless_dir):
         self.bee_dir = bee_dir
         self.limitless_dir = limitless_dir
         
-        self.logger.log("info"), ("MarkdownParser initialized with directories: {}, {}".format(bee_dir, limitless_dir))
 
     def extract_sections(self, file_path):
         
@@ -73,11 +74,18 @@ class MarkdownParser:
                 parsed_data[filename] = self.extract_sections(file_path)
                 
         return parsed_data
+
     def get_parsed_data(self):
         
         """Returns structured markdown data from both directories."""
-        bee_data = self.parse_markdown_files(self.bee_dir)
-        limitless_data = self.parse_markdown_files(self.limitless_dir)
-
-
-        return {"bee": bee_data, "limitless": limitless_data}
+        log.debug("=== Starting get_parsed_data ===")
+        try:
+            log.debug("Reading bee directory...")
+            bee_data = self.parse_markdown_files(self.bee_dir)
+            log.debug("Reading limitless directory...")
+            limitless_data = self.parse_markdown_files(self.limitless_dir)
+            log.debug("Parsing complete, returning data...")
+            return {"bee": bee_data, "limitless": limitless_data}
+        except Exception as e:
+            log.error(f"Error in parser: {e}")
+            raise

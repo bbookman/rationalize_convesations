@@ -50,7 +50,6 @@ class SummaryGenerator:
                 processed[source] = {f"entry_{i}": v for i, v in enumerate(files)}
             else:
                 processed[source] = files
-        self.logger.log(f"Processed Summaries: {processed}")
 
         return processed
 
