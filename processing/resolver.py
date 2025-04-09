@@ -1,3 +1,4 @@
+import traceback
 from processing.summarizer import AIEnhancedSummarizer
 from utils.logger import log
 
@@ -6,7 +7,70 @@ class AIEnhancedResolver:
     def __init__(self, bee_data, limitless_data):
         self.bee_data = bee_data
         self.limitless_data = limitless_data
+        log.debug(f"Resolver initialized with bee_data ({len(bee_data)} sections) and limitless_data ({len(limitless_data)} sections)")
+
+    def resolve(self):
+        """Resolves and combines data from both sources with Bee taking precedence"""
+        log.debug("=== Starting Resolution Process ===")
         
+        try:
+            # Debug input data
+            log.debug(f"Bee data structure: {self.bee_data}")
+            log.debug(f"Limitless data structure: {self.limitless_data}")
+            
+            resolved_data = {
+                'source_availability': [],
+                'sections': []
+            }
+
+            # Check data availability
+            has_bee = bool(self.bee_data)
+            has_limitless = bool(self.limitless_data)
+            
+            if has_bee and has_limitless:
+                resolved_data['source_availability'].append("Both sources available")
+            elif has_bee:
+                resolved_data['source_availability'].append("Bee data only")
+            elif has_limitless:
+                resolved_data['source_availability'].append("Limitless data only")
+            else:
+                log.warning("No data available from either source")
+                return resolved_data
+
+            # Process bee data first (primary source)
+            for section_id, section_data in self.bee_data.items():
+                log.debug(f"Processing bee section {section_id}: {section_data}")
+                if isinstance(section_data, dict):
+                    resolved_section = {
+                        'section_id': section_id,
+                        'source': 'bee',
+                        'top_level_summary': section_data.get('top_level_summary', ''),
+                        'secondary_title': section_data.get('secondary_title', 'No title'),
+                        'content': section_data.get('content', [])
+                    }
+                    resolved_data['sections'].append(resolved_section)
+                    log.debug(f"Added bee section: {resolved_section}")
+
+            # Process limitless data
+            for section_id, section_data in self.limitless_data.items():
+                log.debug(f"Processing limitless section {section_id}: {section_data}")
+                if isinstance(section_data, dict):
+                    resolved_section = {
+                        'section_id': section_id,
+                        'source': 'limitless',
+                        'top_level_summary': section_data.get('top_level_summary', ''),
+                        'secondary_title': section_data.get('secondary_title', 'No title'),
+                        'content': section_data.get('content', [])
+                    }
+                    resolved_data['sections'].append(resolved_section)
+                    log.debug(f"Added limitless section: {resolved_section}")
+
+            log.debug(f"Final resolved data: {resolved_data}")
+            return resolved_data
+
+        except Exception as e:
+            log.error(f"Error during resolution: {str(e)}\n{traceback.format_exc()}")
+            raise
 
     def resolve_conflicts(self):
 

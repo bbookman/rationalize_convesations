@@ -21,60 +21,85 @@ def get_openai_api_key():
 def process_summaries():
     log.debug("=== Entering process_summaries() ===")
     try:
-        log.debug("First line of process_summaries")
-        # Force an early log flush
-        sys.stdout.flush()
-        sys.stderr.flush()
-        
+        # Initial setup
         log.debug("Setting up directories...")
         bee_dir = "test_data/bee"
         limitless_dir = "test_data/limitless"
         output_dir = "output"
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        log.debug(f"Output directory ensured: {output_dir}")
         
         # Directory check with detailed logging
         for dir_path in [bee_dir, limitless_dir]:
             log.debug(f"Checking directory: {dir_path}")
             if not os.path.exists(dir_path):
                 log.error(f"Directory not found: {dir_path}")
-                log.debug("=== Exiting process_summaries() due to missing directory ===")
                 return
+            log.debug(f"Directory contents for {dir_path}: {os.listdir(dir_path)}")
 
-        # Continue only if directories exist
-        log.debug("All directories present, continuing...")
-        
-        log.debug("Creating parser...")
+        # Parser phase
+        log.debug("=== Starting Parser Phase ===")
         parser = MarkdownParser(bee_dir, limitless_dir)
         parsed_data = parser.get_parsed_data()
-
-        # Debug logging before summarizer creation
-        log.debug(f"Creating summarizer with:")
-        log.debug(f"parsed_data type: {type(parsed_data)}")
-        log.debug(f"parsed_data keys: {list(parsed_data.keys() if isinstance(parsed_data, dict) else [])}")
-        log.debug(f"API key present: {bool(get_openai_api_key())}")
-        # import pdb; pdb.set_trace()
-        # Create summarizer with try-except for initialization
-        try:
-            summarizer = AIEnhancedSummarizer(parsed_data, get_openai_api_key())
-            log.debug("Summarizer created successfully")
-        except Exception as e:
-            log.error(f"Failed to create summarizer: {e}")
-            raise
-
-        # Debug logging before and after summary generation
-        try:
-            log.debug("Starting summary generation...")
-            summaries = summarizer.generate_summary()
-            log.debug("Summary generation complete")
-        except Exception as e:
-            log.error(f"Failed during summary generation: {e}")
-            raise
-
+        log.debug(f"Parser returned data with keys: {parsed_data.keys()}")
+        
+        # Summarizer phase
+        log.debug("=== Starting Summarizer Phase ===")
+        openai_api_key = get_openai_api_key()
+        log.debug("Got API key")
+        
+        summarizer = AIEnhancedSummarizer(parsed_data, openai_api_key)
+        log.debug("Created summarizer")
+        
+        # Summarizer phase debug
+        summaries = summarizer.generate_summary()
+        log.debug("=== Summarizer Output Debug ===")
+        log.debug(f"Raw summaries output: {summaries}")  # Add full output logging
+        log.debug(f"Type: {type(summaries)}")
+        log.debug(f"Dir: {dir(summaries)}")  # Show available methods/attributes
+        
+        # Pre-resolver detailed inspection
+        log.debug("=== Pre-Resolver Detailed Inspection ===")
+        if isinstance(summaries, str):
+            log.error("Summarizer returned a string instead of expected dictionary")
+            log.debug(f"String content (first 500 chars): {summaries[:500]}")
+        elif isinstance(summaries, dict):
+            log.debug(f"Dictionary keys: {list(summaries.keys())}")
+            for k, v in summaries.items():
+                log.debug(f"Key '{k}' contains type: {type(v)}")
+                log.debug(f"Value preview: {str(v)[:200]}")
+        else:
+            log.error(f"Unexpected type returned: {type(summaries)}")
+        
+        # Continue with existing resolver code...
+        log.debug("=== Starting Resolver Phase ===")
+        bee_data = summaries.get("bee", {})
+        limitless_data = summaries.get("limitless", {})
+        log.debug(f"Bee data type: {type(bee_data)}")
+        log.debug(f"Limitless data type: {type(limitless_data)}")
+        
+        resolver = AIEnhancedResolver(bee_data, limitless_data)
+        resolved_summaries = resolver.resolve()
+        log.debug(f"Resolved summaries type: {type(resolved_summaries)}")
+        
+        # Generator phase
+        log.debug("=== Starting Generator Phase ===")
+        generator = SummaryGenerator(resolved_summaries, output_dir)
+        generator.generate()
+        log.debug("Summary generation complete")
+        
+        # Verify output
+        if os.path.exists(output_dir):
+            output_files = os.listdir(output_dir)
+            log.debug(f"Output directory contents: {output_files}")
+        
     except Exception as e:
         log.error(f"Exception in process_summaries: {str(e)}\n{traceback.format_exc()}")
         raise
     finally:
         log.debug("=== Exiting process_summaries() ===")
-        # Force final log flush
         sys.stdout.flush()
         sys.stderr.flush()
 

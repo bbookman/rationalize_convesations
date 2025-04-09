@@ -87,32 +87,43 @@ class AIEnhancedSummarizer:
         log.debug("==== Create Prompt Debug ====")
         log.debug(f"Number of sections: {len(sections)}")
         
-        prompt = ""
-        for i, section in enumerate(sections):
-            log.debug(f"Processing section {i}: {section}")
+        result = {
+            'bee': {},
+            'limitless': {}
+        }
+        
+        for section in sections:
+            log.debug(f"Processing section: {section}")
             
-            # Handle empty arrays
-            if not section:
-                log.debug(f"Section {i} is empty, skipping")
+            if not isinstance(section, dict):
+                log.warning(f"Section is not a dictionary: {section}")
                 continue
                 
-            if not isinstance(section, dict):
-                log.warning(f"Section {i} is not a dictionary: {section}")
-                continue
+            source = section['source']
+            section_id = section['section_id']
             
-            # Try to get content first
-            if 'content' in section and section['content']:
-                content = section['content']
-                if isinstance(content, list):
-                    prompt += "\n".join(content) + "\n\n"
-                else:
-                    prompt += str(content) + "\n\n"
-                log.debug(f"Using content for section {i}")
-            # Fall back to secondary_title if content is missing or empty
-            elif 'secondary_title' in section:
-                prompt += section['secondary_title'] + "\n\n"
-                log.debug(f"Using secondary_title for section {i}")
-            else:
-                log.warning(f"Section {i} has neither content nor secondary_title")
+            # Get the actual data from the nested section structure
+            section_data = section.get('sections', {})  # Get the sections dictionary
+            secondary_title = None
+            transcript = []
+            content = []
+            
+            # Get data from subsections
+            for subsection_id, subsection in section_data.items():
+                log.debug(f"Processing subsection: {subsection}")
+                if subsection.get('secondary_title'):
+                    secondary_title = subsection['secondary_title']
+                if subsection.get('transcript'):
+                    transcript.extend(subsection['transcript'])
+            
+            # Create section with actual content
+            result[source][section_id] = {
+                'top_level_summary': section.get('top_level_summary', ''),
+                'secondary_title': secondary_title or 'No title',
+                'transcript': transcript,
+                'content': content
+            }
+            log.debug(f"Added section {section_id} to {source} with actual content")
         
-        return prompt
+        log.debug(f"Final structure - bee sections: {len(result['bee'])}, limitless sections: {len(result['limitless'])}")
+        return result

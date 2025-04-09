@@ -1,133 +1,67 @@
 import os
-import json
-
+from utils.logger import log
+import traceback
 
 class SummaryGenerator:
-    def __init__(self, summaries, output_dir):
-        """Initialize generator with AI-generated summaries and output directory."""
-        self.summaries = self.process_summaries_structure(summaries)
+    def __init__(self, resolved_data, output_dir):
+        self.resolved_data = resolved_data
         self.output_dir = output_dir
-        
-        os.makedirs(self.output_dir, exist_ok=True)  # Ensure output directory exists
+        log.debug(f"Generator initialized with output directory: {output_dir}")
 
-    def process_summaries_structure(self, summaries):
-        
-        """Ensure summaries is a properly formatted dictionary."""
-        print("Type of summaries:", type(summaries))
-        if isinstance(summaries, str):
-            try:
-                summaries = json.loads(summaries)  # Convert string to dict if necessary
-            except json.JSONDecodeError:
-                raise ValueError("Summaries data is not valid JSON.")
-    
-        if not isinstance(summaries, dict):
-            raise TypeError("Expected summaries to be a dictionary.")
-        
-        # Validate dictionary structure
-        for source, files in summaries.items():
-            if not isinstance(source, str):
-                raise ValueError(f"Source key must be a string, got {type(source).__name__}")
+    def generate(self):
+        """Generates summary files based on resolved data"""
+        log.debug("=== Starting Summary Generation ===")
+        try:
+            # Debug input data structure
+            log.debug(f"Full resolved data: {self.resolved_data}")
+            sections = self.resolved_data.get("sections", [])
+            log.debug(f"Number of sections: {len(sections)}")
+
+            content = []
+            content.append("# Best of Class Summary\n")
+
+            # Source availability
+            source_note = "\n".join(self.resolved_data.get("source_availability", []))
+            if source_note:
+                content.append(f"*{source_note}*\n")
+
+            # Conversation Highlights
+            content.append("## Conversation Highlights")
+            highlights = []
+            for section in sections:
+                log.debug(f"Processing section for highlights: {section}")
+                if top_summary := section.get('top_level_summary'):
+                    highlights.append(f"* {top_summary}")
+                    log.debug(f"Added highlight: {top_summary}")
+            if highlights:
+                content.extend(highlights)
+            content.append("\n")
+
+            # Key Takeaways from Bee data
+            content.append("## Key Takeaways")
+            bee_sections = [s for s in sections if s.get('source') == 'bee']
+            takeaways = []
+            for section in bee_sections:
+                log.debug(f"Processing bee section for takeaways: {section}")
+                section_data = section.get('sections', {})
+                for subsection in section_data.values():
+                    if isinstance(subsection, dict) and 'key take aways' in subsection:
+                        takeaways.extend(f"* {take}" for take in subsection['key take aways'])
+            if takeaways:
+                content.extend(takeaways[:5])
+            content.append("\n")
+
+            # Write output with verification
+            output_path = os.path.join(self.output_dir, "summary.md")
+            final_content = '\n'.join(content)
+            log.debug(f"Final content to write:\n{final_content}")
             
-            if not isinstance(files, (dict, list)):
-                raise ValueError(f"Files for source '{source}' must be a dictionary or list, got {type(files).__name__}")
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(final_content)
             
-            if isinstance(files, dict):
-                for filename, summary_data in files.items():
-                    if not isinstance(summary_data, dict):
-                        raise ValueError(f"Summary data for '{source}/{filename}' must be a dictionary, got {type(summary_data).__name__}")
-                    
-                    # Validate required fields in summary_data
-                    required_fields = ["summary"]  # Add other required fields as needed
-                    missing_fields = [field for field in required_fields if field not in summary_data]
-                    if missing_fields:
-                        raise ValueError(f"Summary data for '{source}/{filename}' is missing required fields: {', '.join(missing_fields)}")
-        
-        processed = {}  # Initialize the processed dictionary
-        
-        
-        for source, files in summaries.items():
-            if isinstance(files, list):
-                processed[source] = {f"entry_{i}": v for i, v in enumerate(files)}
-            else:
-                processed[source] = files
-
-        return processed
-
-    def format_summary(self, summary_data, source_availability, location=None):
-        
-        """Format the summary into the required markdown structure."""
-        formatted_summary = ""
-
-        # Add Source Availability Note
-        if source_availability:
-            formatted_summary += f"**{source_availability}**\n\n"
-
-        # Structure Summary Content
-        if "summary" in summary_data:
-            formatted_summary += f"# Best of Class Summary\n\n{summary_data['summary']}\n\n"
-
-        if "highlights" in summary_data:
-            formatted_summary += "## Conversation Highlights\n"
-            for item in summary_data["highlights"][:5]:  # Max 5 bullets
-                formatted_summary += f"- {item}\n"
-            formatted_summary += "\n"
-
-        if "key_takeaways" in summary_data:
-            formatted_summary += "## Key Takeaways\n"
-            for item in summary_data["key_takeaways"][:5]:  # Max 5 bullets
-                formatted_summary += f"- {item}\n"
-            formatted_summary += "\n"
-
-        if "atmosphere" in summary_data:
-            formatted_summary += f"## Atmosphere\n{summary_data['atmosphere']}\n\n"
-
-        if "quotes" in summary_data:
-            formatted_summary += "## Selected Quotes\n"
-            for item in summary_data["quotes"][:6]:  # 3 impactful + 3 takeaway-aligned
-                formatted_summary += f"- \"{item}\"\n"
-            formatted_summary += "\n"
-
-        # Add Location if Available
-        if location:
-            formatted_summary += f"**Location:** {location}\n\n"
-
-        return formatted_summary.strip()
-
-    def save_summary(self, date, summary_content):
-        
-        """Save formatted summary as a markdown file in the output directory."""
-        filename = f"{self.output_dir}/{date}.md"
-        with open(filename, "w", encoding="utf-8") as file:
-            file.write(summary_content)
-
-    def generate_summaries(self):
-        
-        """Process and generate markdown summaries for all available data."""
-
-        for source, files in self.summaries.items():
-            if not isinstance(files, dict):
-                print(f"Warning: Skipping {source}, expected dict but got {type(files).__name__}")
-                with open(f"{self.output_dir}/{source}.md", "w", encoding="utf-8") as file:
-                    file.write(f"Source: {source}") 
-                continue
-
-            for filename, summary_data in files.items():
-                date = filename.replace(".md", "") if isinstance(filename, str) else f"entry_{filename}"
-
-                # Determine source availability notation
-                if "bee" in self.summaries and "limitless" in self.summaries:
-                    source_availability = None  # Both sources exist
-                elif "bee" in self.summaries:
-                    source_availability = "Bee data only"
-                elif "limitless" in self.summaries:
-                    source_availability = "Limitless data only"
-                else:
-                    continue  # No valid data
-
-                # Extract location if present
-                location = summary_data.get("location", "Unknown")
-
-                # Format and save summary
-                formatted_summary = self.format_summary(summary_data, source_availability, location)
-                self.save_summary(date, formatted_summary)
+            log.debug(f"Summary written to: {output_path}")
+            
+        except Exception as e:
+            log.error(f"Error generating summary: {str(e)}\n{traceback.format_exc()}")
+            raise
 
