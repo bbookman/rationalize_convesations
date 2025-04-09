@@ -18,7 +18,7 @@ class AIEnhancedSummarizer:
         self.client = OpenAI(api_key=self.api_key)
 
     def call_openai(self, prompt):
-        
+        log.debug("Calling OpenAI")
         """Send a request to GPT-4o Mini for enhanced summarization with error handling."""
         try:
             response = self.client.chat.completions.create(
@@ -37,28 +37,40 @@ class AIEnhancedSummarizer:
         try:
             log.debug("=== Starting generate_summary ===")
             log.debug(f"Self.parsed_data type: {type(self.parsed_data)}")
-            for key, value in self.parsed_data.items():
-                log.debug(f"Key: {key}, Type: {type(value)}")
-                if isinstance(value, (list, dict)):
-                    log.debug(f"Content: {value}")
+            log.debug(f"Self.parsed_data full content: {self.parsed_data}")  # Added this line
+            log.debug("=== Parsed Data Keys ===")
+            if isinstance(self.parsed_data, dict):
+                log.debug(f"Available keys: {list(self.parsed_data.keys())}")
+                for key, value in self.parsed_data.items():
+                    log.debug(f"Key: {key}")
+                    log.debug(f"Value type: {type(value)}")
+                    log.debug(f"Value content: {value}")
+                    log.debug("---")
+            else:
+                log.error(f"parsed_data is not a dictionary but a {type(self.parsed_data)}")
 
             # Before creating sections
             if isinstance(self.parsed_data, dict):
                 sections = self.parsed_data.get('sections', [])
                 log.debug("=== Sections Debug ===")
                 log.debug(f"Sections type: {type(sections)}")
-                log.debug(f"Sections content: {sections}")
+                log.debug(f"Raw sections data: {sections}")
+                log.debug(f"Number of sections before create_prompt: {len(sections)}")
                 
                 if isinstance(sections, list):
                     for i, section in enumerate(sections):
                         log.debug(f"Section {i} type: {type(section)}")
                         log.debug(f"Section {i} content: {section}")
-            else:
-                log.debug(f"parsed_data is not a dictionary: {type(self.parsed_data)}")
-                raise TypeError(f"Expected dictionary, got {type(self.parsed_data)}")
-            
-            summaries = self.create_prompt(sections)
-            return summaries
+                
+                # Add pre-create_prompt debug
+                log.debug("=== Pre create_prompt Debug ===")
+                log.debug(f"About to call create_prompt with sections:")
+                log.debug(f"Sections length: {len(sections)}")
+                log.debug(f"Sections content: {sections}")
+                
+                summaries = self.create_prompt(sections)
+                return summaries
+                
         except Exception as e:
             log.error(f"Error in generate_summary: {str(e)}\n{traceback.format_exc()}")
             raise

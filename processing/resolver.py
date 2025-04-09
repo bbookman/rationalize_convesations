@@ -1,4 +1,5 @@
 from processing.summarizer import AIEnhancedSummarizer
+from utils.logger import log
 
 
 class AIEnhancedResolver:
@@ -8,14 +9,17 @@ class AIEnhancedResolver:
         
 
     def resolve_conflicts(self):
-        self.loogger.log("info"),("Starting conflict resolution...")
+
         """Merge and refine summaries using OpenAI."""
         resolved_summaries = {}
         for filename in self.get_filenames():
             bee_summary = self.get_bee_summary(filename)
+            log.debug(f"Bee summary for {filename}: {bee_summary}")
             limitless_summary = self.get_limitless_summary(filename)
+            log.debug(f"Limitless summary for {filename}: {limitless_summary}")
             resolved_summary = self.merge_summaries(bee_summary, limitless_summary)
             resolved_summaries[filename] = resolved_summary
+            log.debug(f"Resolved summary for {filename}: {resolved_summary}")
         return resolved_summaries
 
     def get_filenames(self):
@@ -24,7 +28,7 @@ class AIEnhancedResolver:
         return set(self.bee_data.keys()).union(self.limitless_data.keys())
 
     def get_bee_summary(self, filename):
-        self.loogger.log("info"),("Getting bee summary...")
+        
         """Get the summary from bee_data for the given filename."""
         return self.bee_data.get(filename, "")
 
@@ -37,6 +41,7 @@ class AIEnhancedResolver:
         
         """Merge the bee and limitless summaries using OpenAI."""
         if bee_summary and limitless_summary:
+            log.debug("Both summaries are present, merging them.")
             prompt = self.create_prompt(bee_summary, limitless_summary)
             summarizer = AIEnhancedSummarizer(None)  # Create an instance of AIEnhancedSummarizer
             refined_summary = summarizer.call_openai(prompt)

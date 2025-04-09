@@ -51,7 +51,7 @@ def process_summaries():
         log.debug(f"parsed_data type: {type(parsed_data)}")
         log.debug(f"parsed_data keys: {list(parsed_data.keys() if isinstance(parsed_data, dict) else [])}")
         log.debug(f"API key present: {bool(get_openai_api_key())}")
-
+        # import pdb; pdb.set_trace()
         # Create summarizer with try-except for initialization
         try:
             summarizer = AIEnhancedSummarizer(parsed_data, get_openai_api_key())
