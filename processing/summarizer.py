@@ -2,7 +2,7 @@ import os
 import traceback
 from openai import OpenAI
 from utils.logger import log
-
+from nested_lookup import nested_lookup
 
 class AIEnhancedSummarizer:
     def __init__(self, parsed_data, api_key=None):
@@ -37,39 +37,47 @@ class AIEnhancedSummarizer:
         try:
             log.debug("=== Starting generate_summary ===")
             log.debug(f"Self.parsed_data type: {type(self.parsed_data)}")
-            log.debug(f"Self.parsed_data full content: {self.parsed_data}")  # Added this line
-            log.debug("=== Parsed Data Keys ===")
-            if isinstance(self.parsed_data, dict):
-                log.debug(f"Available keys: {list(self.parsed_data.keys())}")
-                for key, value in self.parsed_data.items():
-                    log.debug(f"Key: {key}")
-                    log.debug(f"Value type: {type(value)}")
-                    log.debug(f"Value content: {value}")
-                    log.debug("---")
-            else:
-                log.error(f"parsed_data is not a dictionary but a {type(self.parsed_data)}")
-
-            # Before creating sections
-            if isinstance(self.parsed_data, dict):
-                sections = self.parsed_data.get('sections', [])
-                log.debug("=== Sections Debug ===")
-                log.debug(f"Sections type: {type(sections)}")
-                log.debug(f"Raw sections data: {sections}")
-                log.debug(f"Number of sections before create_prompt: {len(sections)}")
+            
+            # Look for sections in nested structure
+            log.debug("Searching for sections in nested structure...")
+            all_sections = []
+            
+            # Search through bee and limitless data
+            for key in ['bee', 'limitless']:
+                if key in self.parsed_data:
+                    date_data = self.parsed_data[key]
+                    log.debug(f"Processing {key} data...")
+                    log.debug(f"date_data type: {type(date_data)}")
+                    log.debug(f"date_data keys: {date_data.keys()}")
+                    
+                    # Each section should be a dictionary with title and content
+                    for filename, file_data in date_data.items():
+                        log.debug(f"\nProcessing file: {filename}")
+                        log.debug(f"file_data type: {type(file_data)}")
+                        log.debug(f"file_data keys: {file_data.keys() if isinstance(file_data, dict) else 'NOT A DICT'}")
+                        
+                        for section_id, section_data in file_data.items():
+                            log.debug(f"\nProcessing section_id: {section_id}")
+                            log.debug(f"section_data type: {type(section_data)}")
+                            log.debug(f"section_data content: {section_data}")
+                            
+                            if not isinstance(section_data, dict):
+                                log.error(f"Found non-dictionary section_data: {type(section_data)}")
+                                log.error(f"Value: {section_data}")
+                                continue
+                                
+                            section = {
+                                'section_id': section_id,
+                                'source': key,
+                                'secondary_title': section_data.get('secondary_title', 'No title'),
+                                'transcript': section_data.get('transcript', []),
+                                'content': section_data.get('content', [])
+                            }
+                            all_sections.append(section)
+                            log.debug(f"Added section: {section}")
                 
-                if isinstance(sections, list):
-                    for i, section in enumerate(sections):
-                        log.debug(f"Section {i} type: {type(section)}")
-                        log.debug(f"Section {i} content: {section}")
-                
-                # Add pre-create_prompt debug
-                log.debug("=== Pre create_prompt Debug ===")
-                log.debug(f"About to call create_prompt with sections:")
-                log.debug(f"Sections length: {len(sections)}")
-                log.debug(f"Sections content: {sections}")
-                
-                summaries = self.create_prompt(sections)
-                return summaries
+            log.debug(f"\nTotal sections found: {len(all_sections)}")
+            return self.create_prompt(all_sections)
                 
         except Exception as e:
             log.error(f"Error in generate_summary: {str(e)}\n{traceback.format_exc()}")
